@@ -12,7 +12,7 @@ templates/
 ├── servers/          # Linux / Windows systems (planned)
 └── printers/
     └── zebra/        # Zebra Link-OS industrial printers
-
+```
 ---
 
 ## 📋 Available Templates
