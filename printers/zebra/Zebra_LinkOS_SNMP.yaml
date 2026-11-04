@@ -1,0 +1,1358 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 60f1dce8720d41eab748470cd7d4746e
+      name: Printer/Thermal
+  templates:
+    - uuid: c9d9602c4f2544a6b85e23075210705f
+      template: 'Zebra Industrial Printer'
+      name: 'Zebra LinkOS - Template'
+      description: |
+        Template made for: Zebra ZD420 Industrial Printers.
+        
+        Tested on: Zabbix 7
+        Based on MIB: Link-OS 7.7
+        
+        Written and tested by: Rene Holasek and Pavel Cervenicky.
+        Documentation and final changes written by: Gemini AI.
+      groups:
+        - name: Printer/Thermal
+        - name: Templates/Zebra
+      items:
+        - uuid: ffb4dd785b1049bd841847e53cd1f714
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          history: 2w
+          trends: 800d
+          valuemap:
+            name: Ping
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          tags:
+            - tag: icmp
+              value: ping
+          triggers:
+            - uuid: 76c69428d2e4435bb0033c22a9a7327d
+              expression: 'last(/Zebra Industrial Printer/icmpping,#1)=0'
+              name: 'Unavailable by ICMP ping'
+              priority: AVERAGE
+        - uuid: 36db5eab112f4ba7bb794345f7bd7675
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          history: 2w
+          value_type: FLOAT
+          trends: 800d
+          units: '%'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          tags:
+            - tag: icmp
+              value: loss
+          triggers:
+            - uuid: 55c933e6f7104d81a02568a58933246b
+              expression: 'min(/Zebra Industrial Printer/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Zebra Industrial Printer/icmppingloss,5m)<100'
+              name: 'High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              dependencies:
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'last(/Zebra Industrial Printer/icmpping,#1)=0'
+        - uuid: a996c6a1623f40bcbe2922ccce1448a4
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          history: 2w
+          value_type: FLOAT
+          trends: 800d
+          units: s
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          tags:
+            - tag: icmp
+              value: response
+          triggers:
+            - uuid: 100ef4ec3340426087162ec1430098cf
+              expression: 'avg(/Zebra Industrial Printer/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              dependencies:
+                - name: 'High ICMP ping loss'
+                  expression: 'min(/Zebra Industrial Printer/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Zebra Industrial Printer/icmppingloss,5m)<100'
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'last(/Zebra Industrial Printer/icmpping,#1)=0'
+        - uuid: 5b8ee3f2195d4aaebe17c6e35bc92a11
+          name: 'SNMP Enable'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.10.10.5.12.1.0]'
+          key: snmp.enabled
+          delay: 15m
+          trends: '0'
+          valuemap:
+            name: Yes/No
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          tags:
+            - tag: snmp
+              value: settings
+        - uuid: 7b21d441e4d04b78b7868f08f32e5187
+          name: 'SNMP v3 Enable'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.10.10.5.17.1.0]'
+          key: snmp.v3.enabled
+          delay: 15m
+          trends: '0'
+          description: 'For security reasons.'
+          valuemap:
+            name: Yes/No
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          tags:
+            - tag: snmp
+              value: settings
+        - uuid: 5a0cf5bf8248495aae323277b27610d8
+          name: 'Bluetooth discoverable'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.3.3.0]'
+          key: zebra.bluetooth
+          delay: 15m
+          history: 7d
+          trends: '0'
+          valuemap:
+            name: ON/OFF
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: bluetooth
+        - uuid: cbc247661e05416da941ecb64067258e
+          name: 'Bluetooth mac'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.3.11.0]'
+          key: zebra.bluetooth.mac
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: MACADDRESS_B
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: bluetooth
+        - uuid: 84fb8814e38945ac815e59ef3bffe063
+          name: 'Bluetooth name'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.3.5.0]'
+          key: zebra.bluetooth.name
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: bluetooth
+        - uuid: 39a6efba3be1423d84043ef5f7f15cb4
+          name: 'Print Buffer Error'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.18.0]'
+          key: zebra.buffer.error
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Memory
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          timeout: 4s
+          tags:
+            - tag: memory
+              value: error
+          triggers:
+            - uuid: a54af34b00a04cce9f7915e6f1d28858
+              expression: 'last(/Zebra Industrial Printer/zebra.buffer.error)=2'
+              name: 'Print Buffer Full Error'
+              priority: WARNING
+        - uuid: be15dd63501f424f9e36be782f0932a3
+          name: 'Cache Memory Error'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.15.0]'
+          key: zebra.cache
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Memory
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: memory
+              value: error
+          triggers:
+            - uuid: 7c43526ea2bd4ec89763c9d4c03abd95
+              expression: 'last(/Zebra Industrial Printer/zebra.cache)=2'
+              name: 'Cache Memory Error'
+        - uuid: 0399d7059b9f41f780beeddd65a126e4
+          name: 'Head close action'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.4.5.0]'
+          key: zebra.close.action
+          trends: '0'
+          valuemap:
+            name: 'Head actions'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: config
+        - uuid: bb516f83b5714a94a5c2a212ffb9ed7f
+          name: 'Total cuts'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.16.0]'
+          key: zebra.cuts
+          delay: 15m
+          trends: 800d
+          units: '!cuts'
+          description: |
+            Total non-resettable cuts counter over the lifetime of the printer (zbrOdometerTotalCuts).
+            
+            Used for predictive blade maintenance.
+            IPA is ok.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 15m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cutter
+        - uuid: 706f0ad731e442ff9a23810e8b28b153
+          name: 'Total cuts reset'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.17.0]'
+          key: zebra.cuts.reset
+          delay: 15m
+          trends: 800d
+          units: '!cuts'
+          description: |
+            User-resettable cut counter.
+            Reset to 0 after replacing or servicing the cutter blade.
+            (zbrOdometerTotalCuts)
+            
+            Used for predictive blade maintenance.
+            IPA is ok.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 15m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cutter
+          triggers:
+            - uuid: 174f1d329f2e4256a073aae000867e1d
+              expression: 'last(/Zebra Industrial Printer/zebra.cuts.reset)>={$ZEBRA.CUTS.MAX.WARN}'
+              name: 'Cutter requires increased attention'
+              priority: INFO
+              description: 'Cutter exceeded recommended service interval.'
+              tags:
+                - tag: Cutter
+                  value: warning
+        - uuid: 143f9a041ce1469880ad01ae53c52ccf
+          name: 'Media darkness'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.2.0]'
+          key: zebra.darkness
+          delay: 5m
+          history: 7d
+          trends: 800d
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: darkness
+          triggers:
+            - uuid: 2cc8683bd9f844df9d4702cc6fa6b681
+              expression: 'last(/Zebra Industrial Printer/zebra.darkness)>={$ZEBRA.DARKNESS.INFO}'
+              name: 'Printhead darkness - Too High'
+              priority: INFO
+              description: 'High darkness is decreasing print-head live-span.'
+              manual_close: 'YES'
+        - uuid: 0fe4a99bfd7949e0a395457cdf80b0d1
+          name: 'Media darkness mode'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.32.0]'
+          key: zebra.darkness.mode
+          delay: 5m
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Darkness mode'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: print
+              value: darkness
+        - uuid: cdf76c3214a44013b8bdd4147f08e5a7
+          name: 'Media relative darkness'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.3.12.0]'
+          key: zebra.darkness.relative
+          delay: 15m
+          history: 7d
+          trends: 800d
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: darkness
+        - uuid: e75a6e2302d446f7819602b628094753
+          name: 'Manufactured date'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.16.0]'
+          key: zebra.datecode
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: NOTES
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+        - uuid: 4651a066b04943b69b6f931c46a75c20
+          name: Errors
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.5.1.24.0]'
+          key: zebra.error
+          delay: 15m
+          history: 365d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: error
+        - uuid: 50e18cca6c324a4e9eb697e2ea36637a
+          name: 'Firmware version'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.2.0]'
+          key: zebra.fw
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            For more informations:
+            https://www.zebra.com/gb/en/software/printer-software/link-os.html
+          inventory_link: OS
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          timeout: 4s
+          tags:
+            - tag: system
+              value: firmware
+            - tag: system
+              value: info
+        - uuid: 10f784e8764147dd8fafd93a4b7f24d9
+          name: 'Head latch status'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.1.1.0]'
+          key: zebra.head
+          history: 1w
+          trends: 800d
+          valuemap:
+            name: Latch
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: sensor
+              value: latch
+          triggers:
+            - uuid: 913c8e6a15744e3f84afc1d97b02898e
+              expression: 'last(/Zebra Industrial Printer/zebra.head)=2'
+              name: 'Head latch - Open'
+              priority: WARNING
+              description: |
+                The status of the printer head latch. 
+                The head latch must be closed for printing.
+              dependencies:
+                - name: 'Paper Out'
+                  expression: 'last(/Zebra Industrial Printer/zebra.paper.out)=2'
+        - uuid: e52a863db37748bdb76082f73759ce5f
+          name: 'Head open count'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.9.0]'
+          key: zebra.head.latch
+          delay: 15m
+          trends: 800d
+          description: 'Total number of times the printhead latch was opened (zbrOdometerLatchOpenCount), typically when loading media or ribbons.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: 'head latch'
+        - uuid: 86cd958d462448caacd580e2de0a2933
+          name: 'Sensor Head temperature'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.15.6.2.0]'
+          key: zebra.head.temperature
+          history: 2w
+          value_type: FLOAT
+          trends: 800d
+          units: °C
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: sensor
+              value: temperature
+        - uuid: 657a7fe3612f43009fb77661eaf8f895
+          name: 'Print HEX dump'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.8.18.0]'
+          key: zebra.hex.mode
+          delay: 3m
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Yes/No
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: mode
+          triggers:
+            - uuid: b8391bce6d274c47b97d9bcfd9c21835
+              expression: 'last(/Zebra Industrial Printer/zebra.hex.mode)=2'
+              name: 'Hex dump mode'
+              priority: INFO
+              description: 'Printer is in Hex dump mode.'
+              tags:
+                - tag: mode
+                  value: hex
+        - uuid: efa17026296245a9ab8589cdd114c498
+          name: 'Number of labels printed'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.7.0]'
+          key: zebra.labels
+          delay: 15m
+          trends: 800d
+          units: '!labels'
+          description: 'Lifetime total number of labels printed by the printer (zbrOdometerTotalLabelCount).'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: labels
+        - uuid: 6c90bfbb58bb4f4d9854b83cbfa6f197
+          name: 'Number of labels printed since reset'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.12.0]'
+          key: zebra.labels.total
+          delay: 15m
+          trends: 800d
+          units: '!labels'
+          description: 'User label counter 1 (zbrOdometerUserLabelCount1). Tracks labels printed since last reset.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: labels
+        - uuid: 0c27f62e52a84a41ae8e6e55842b8312
+          name: 'Total print length'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.8.0]'
+          key: zebra.lenght
+          delay: 15m
+          trends: 800d
+          units: '!cm'
+          description: |
+            Total length of media in cm that has passed through the printer over its lifetime 
+            (zbrOdometerTotalPrintLength).
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 15m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cm
+        - uuid: 6894312e9efb483fbfb00750a18b801d
+          name: 'Total print length for cleaned head'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.3.0]'
+          key: zebra.lenght.head.clean
+          delay: 15m
+          history: 14d
+          trends: 800d
+          units: '!cm'
+          description: |
+            Length of media in cm printed since the printhead was last cleaned (zbrOdometerHeadClean). 
+            Reset to 0 after maintenance.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cm
+        - uuid: 53cae95693f140de9bcd93899183ae20
+          name: 'Label max lenght'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.8.15.0]'
+          key: zebra.lenght.max
+          delay: 15m
+          history: 14d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          tags:
+            - tag: print
+              value: length
+        - uuid: 84dcb49ca49a492ab42ad1a221fb774f
+          name: 'Print length in cm since reset'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.1.0]'
+          key: zebra.lenght.total
+          delay: 15m
+          history: 14d
+          trends: 800d
+          units: '!cm'
+          description: 'First user-resettable media counter in cm (zbrOdometerMediaMarkerCount1).'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cm
+          triggers:
+            - uuid: ec0ea624bdeb4a90951d8da1e5a5d3b9
+              expression: 'last(/Zebra Industrial Printer/zebra.lenght.total)>={$ZEBRA.HEAD_PRINT_CM_WARN}'
+              name: 'Printer head requires increased attention'
+              priority: INFO
+              description: 'Print-head exceeded recommended live-span.'
+        - uuid: 669a82702bad4769bcbd43bbe0f2acbe
+          name: 'Print length in cm since reset 2'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.1.2.0]'
+          key: zebra.lenght.total2
+          delay: 15m
+          history: 14d
+          trends: 800d
+          units: '!cm'
+          description: 'Second user-resettable media counter in cm (zbrOdometerMediaMarkerCount2).'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: cm
+        - uuid: c75595c8250045d69743dac37662f6d2
+          name: 'MAC Address'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.10.20.10.2.1.5.2]'
+          key: zebra.mac
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: MACADDRESS_A
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+        - uuid: f857eebe4b0a4dbd9a913cefa82f4bf4
+          name: Model
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.1.0]'
+          key: zebra.model
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: MODEL
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+        - uuid: a6a7bdd32ed64687b343a1869974264f
+          name: Location
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.12.0]'
+          key: zebra.name
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+            - tag: system
+              value: location
+        - uuid: c12ee8e45eff48ac883b8fbbfd5198b0
+          name: 'Network: Dropped packets'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.2.2.1.13]'
+          key: zebra.network.drop
+          status: DISABLED
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: component
+              value: network
+        - uuid: 9fba5af0dd4947d587180650a64aa8f2
+          name: 'Network: Error packets'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.2.2.1.14]'
+          key: zebra.network.error
+          status: DISABLED
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: component
+              value: network
+        - uuid: c2cb9ce755d446eba8f754eedbb69487
+          name: 'LinkOS version'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.18.0]'
+          key: zebra.os
+          delay: 15m
+          value_type: TEXT
+          trends: '0'
+          inventory_link: OS_SHORT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: firmware
+            - tag: system
+              value: info
+        - uuid: 3d890ff19f92483bb9a5b21a6812860a
+          name: Paper-Out
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.23.0]'
+          key: zebra.paper.out
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Error State'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: sensor
+              value: paper
+          triggers:
+            - uuid: 1a62f4c2820d48b8919b8d5058af9036
+              expression: 'last(/Zebra Industrial Printer/zebra.paper.out)=2'
+              name: 'Paper Out'
+              priority: WARNING
+        - uuid: e9c7d361ff3548e7bc37081b6200a982
+          name: 'Print Pause'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.22.0]'
+          key: zebra.pause
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Pause
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: status
+          triggers:
+            - uuid: 0f93874f08084fcf8713e60d42339603
+              expression: 'last(/Zebra Industrial Printer/zebra.pause)=2'
+              name: 'Printer is in pause mode.'
+              priority: INFO
+              description: 'Pasue button is pressed'
+        - uuid: fe99267b585f40ef8936f0be1bfb3446
+          name: 'Power up action'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.4.6.0]'
+          key: zebra.power.action
+          delay: 5m
+          trends: '0'
+          valuemap:
+            name: 'Head actions'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: config
+        - uuid: 9a0ad7f2c19c451281c4ebc2af395948
+          name: 'Print media'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.4.14.0]'
+          key: zebra.print.media
+          delay: 15m
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Media
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: mode
+        - uuid: 7d5d36d59c4844f7a6ce9b3aaebbcce3
+          name: 'Print method'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.4.1.0]'
+          key: zebra.print.method
+          delay: 15m
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Print method'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: mode
+        - uuid: 6b834f14d5b9429791d254a5e468e526
+          name: 'Print mode'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.10.4.2.0]'
+          key: zebra.print.mode
+          delay: 15m
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Print mode'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: mode
+        - uuid: 0f06311af4a144b2b0276cad60419760
+          name: 'Jobs printed by Print Server'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.30.1.0]'
+          key: zebra.printed.jobs
+          delay: 15m
+          history: 30d
+          trends: 800d
+          units: '!jobs'
+          description: 'Total print jobs logged and processed by the internal print server since boot (zbrOutputTotalJobsLogged).'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: jobs
+        - uuid: 68131718d89242e28efa6ba7f1ec20cb
+          name: 'Jobs in Print Queue'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.10.16.0]'
+          key: zebra.queue.jobs
+          delay: 5m
+          history: 14d
+          trends: 800d
+          description: 'Current number of active print jobs queued in buffer (zbrDeviceJobsPrint).'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 45m
+          timeout: 4s
+          tags:
+            - tag: counter
+              value: jobs
+        - uuid: edb8954828dc4a5982a0a8babc503c6c
+          name: 'RAM Allocation Error'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.9.0]'
+          key: zebra.ram
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: Memory
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: memory
+              value: error
+          triggers:
+            - uuid: a96de4a437324ad59a06453b4f9e94d3
+              expression: 'last(/Zebra Industrial Printer/zebra.ram)=2'
+              name: 'RAM Allocation Error'
+              priority: WARNING
+        - uuid: 81994dd3c2dd4434a7873c94f7ae39c3
+          name: 'RFID Enable'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.3.40.1.0]'
+          key: zebra.rfid
+          delay: 15m
+          history: 7d
+          trends: '0'
+          valuemap:
+            name: ON/OFF
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: rfid
+        - uuid: 823baa7e21f5405d9ca7caa570d18550
+          name: Ribbon-Out
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.24.0]'
+          key: zebra.ribbon.out
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Error State'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: ribbon
+          triggers:
+            - uuid: 85f041a16c224c009f8cc29cddffea6b
+              expression: 'last(/Zebra Industrial Printer/zebra.ribbon.out)=2'
+              name: Ribbon-Out
+              priority: WARNING
+        - uuid: 3ad17228ca15438ab7a8fc73e3b71085
+          name: 'Sleep enable'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.3.50.1.0]'
+          key: zebra.sleep
+          delay: 15m
+          history: 7d
+          trends: '0'
+          valuemap:
+            name: ON/OFF
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+            - tag: system
+              value: sleep
+        - uuid: 83c607fc55d646aeae0045a61627bcaa
+          name: 'Sleep timeout'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.2.3.50.2.0]'
+          key: zebra.sleep.timeout
+          delay: 15m
+          history: 30d
+          trends: '0'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+            - tag: system
+              value: sleep
+        - uuid: e8cde9628bf54f9db1c84d0e9dec6eab
+          name: 'Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.1.9.0]'
+          key: zebra.sn
+          delay: 15m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: SERIALNO_A
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+            - tag: system
+              value: time
+        - uuid: 5fa545b266904ef8b546e41bb1c6317e
+          name: 'Media print speed'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.5.0]'
+          key: zebra.speed
+          delay: 15m
+          history: 7d
+          trends: 800d
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: speed
+        - uuid: cba671ad9e6a43ad97a6d62b8acd82d6
+          name: 'Tear off position'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.8.1.0]'
+          key: zebra.tearoffposition
+          delay: 5m
+          history: 14d
+          trends: 800d
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          tags:
+            - tag: print
+              value: 'Tear Off'
+        - uuid: c0f54a194c5f4f00b87ed3bd72659cfb
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.11.2.4.3.4.9.0]'
+          key: zebra.uptime
+          delay: 5m
+          history: 7d
+          trends: 800d
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: system
+              value: info
+            - tag: system
+              value: uptime
+        - uuid: 3292482f1aa941518340409ee64b900f
+          name: 'Ribbon Warning'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.6.17.0]'
+          key: zebra.warning
+          history: 7d
+          trends: 800d
+          valuemap:
+            name: 'Error State'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: ribbon
+          triggers:
+            - uuid: 16385100d03c4e48ba00f88326010eba
+              expression: 'last(/Zebra Industrial Printer/zebra.warning)=2'
+              name: 'Ribbon Warning'
+              priority: WARNING
+              tags:
+                - tag: Ribbon
+                  value: Warning
+        - uuid: 4b472dc045ed4e34844aeda5726a8702
+          name: 'Label width'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.8.4.0]'
+          key: zebra.width
+          history: 14d
+          trends: 800d
+          description: |
+            Label width in Dots.
+            Equivalent of ^PW
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1m
+          tags:
+            - tag: print
+              value: width
+          triggers:
+            - uuid: 487ac3884f4a4020bff47bc2bbee5202
+              expression: 'last(/Zebra Industrial Printer/zebra.width)<>{$ZEBRA.LABEL.WIDTH}'
+              name: 'Bad label width'
+              priority: INFO
+              description: 'Length is incorrect for standard use.'
+              manual_close: 'YES'
+        - uuid: e71d3bead6f645fca67ee2d3bd3c0262
+          name: 'Wi-Fi Associated'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.6.1.1.0]'
+          key: zebra.wlan.associated
+          delay: 15m
+          history: 7d
+          trends: '0'
+          valuemap:
+            name: ON/OFF
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: wlan
+        - uuid: fbbe710cc26e4428be231f7a9a6f7b09
+          name: 'Wi-Fi Signal'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.20.6.1.2.0]'
+          key: zebra.wlan.signal
+          delay: 5m
+          history: 7d
+          value_type: FLOAT
+          units: '!dBm'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: wireless
+              value: wlan
+          triggers:
+            - uuid: 9a75e19cb5764b2d87dae1f0e4525ad3
+              expression: 'last(/Zebra Industrial Printer/zebra.wlan.signal)<={$ZEBRA.WLAN.SIGNAL.MIN}'
+              name: 'Low Wi-Fi signal strength'
+              priority: INFO
+              description: 'Wi-Fi signal strength might cause problems with a connectivity.'
+              manual_close: 'YES'
+        - uuid: faa8f99a9f1c490caf66905ecd14b1f4
+          name: 'ZPL offset'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.10642.8.19.0]'
+          key: zebra.zpl.offset
+          delay: 5m
+          history: 2w
+          trends: 800d
+          description: |
+            Positive numbers move the edge of the image toward the right edge of the label.
+            
+            Negative numbers move the left edge of the image toward the left edge of the label by the number of dots selected
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 30m
+          timeout: 4s
+          tags:
+            - tag: print
+              value: width
+      tags:
+        - tag: media
+          value: label
+        - tag: target
+          value: printer
+      macros:
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.2'
+        - macro: '{$ZEBRA.CUTS.MAX.WARN}'
+          value: '250000'
+          description: 'Warn if cutter needs check for maintenance .'
+        - macro: '{$ZEBRA.DARKNESS.INFO}'
+          value: '27'
+          description: 'Warn if darkness is too high.'
+        - macro: '{$ZEBRA.HEAD_PRINT_CM_WARN}'
+          value: '550000'
+          description: 'Warn if print head needs attention.'
+        - macro: '{$ZEBRA.LABEL.WIDTH}'
+          value: '599'
+          description: 'Expected label width.'
+        - macro: '{$ZEBRA.WLAN.SIGNAL.MIN}'
+          value: '-75'
+          description: 'Warn if signal strength is low. (RSSI)'
+      valuemaps:
+        - uuid: 7f0634c0c2ff448589cdc72c76402806
+          name: 'Darkness mode'
+          mappings:
+            - value: '1'
+              newvalue: Cartridge
+            - value: '2'
+              newvalue: User
+            - value: '3'
+              newvalue: Relative
+        - uuid: ff164449716b4556b43e57338bb7dad2
+          name: 'Error State'
+          mappings:
+            - value: '1'
+              newvalue: Normal
+            - value: '2'
+              newvalue: Error
+        - uuid: 18f79d3f82cd48fe8aed336b92f8f8ad
+          name: 'Head actions'
+          mappings:
+            - value: '1'
+              newvalue: Calibrate
+            - value: '2'
+              newvalue: Feed
+            - value: '3'
+              newvalue: Lenght
+            - value: '4'
+              newvalue: 'No motion'
+            - value: '5'
+              newvalue: 'Short cal'
+            - value: '6'
+              newvalue: 'Quick cal'
+        - uuid: 3fd293f0f13d48378bf3ec6181107069
+          name: Latch
+          mappings:
+            - value: '1'
+              newvalue: Close/Ok
+            - value: '2'
+              newvalue: Open/Error
+        - uuid: 5e978ca676c9405ba38e7231cae7ae43
+          name: Media
+          mappings:
+            - value: '1'
+              newvalue: Continuous
+            - value: '2'
+              newvalue: Gap
+            - value: '3'
+              newvalue: Mark
+            - value: '4'
+              newvalue: 'Auto detect'
+        - uuid: 370fd3040af74726be7501584e319e09
+          name: Memory
+          mappings:
+            - value: '1'
+              newvalue: 'No problem'
+            - value: '2'
+              newvalue: Problem
+        - uuid: d81621c594fa4c9bab377c9120a73034
+          name: ON/OFF
+          mappings:
+            - value: '1'
+              newvalue: 'On'
+            - value: '2'
+              newvalue: 'Off'
+        - uuid: 29f969cd1d8c4104b048f33af27b4a17
+          name: Pause
+          mappings:
+            - value: '1'
+              newvalue: Ok
+            - value: '2'
+              newvalue: 'Printer paused'
+        - uuid: 19f60517c3c341fd9784c63402c190f7
+          name: Ping
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '0'
+              newvalue: Down
+        - uuid: 118749fada7c4c4bbabbc12219cfbad7
+          name: 'Print method'
+          mappings:
+            - value: '1'
+              newvalue: 'Thermal transfer'
+            - value: '2'
+              newvalue: 'Direct thermal'
+        - uuid: 595cdf49851f4110affc450493a63919
+          name: 'Print mode'
+          mappings:
+            - value: '1'
+              newvalue: 'Tear off'
+            - value: '2'
+              newvalue: 'Peal off'
+            - value: '3'
+              newvalue: Rewind
+            - value: '4'
+              newvalue: Cutter
+            - value: '5'
+              newvalue: Delayed-cut
+            - value: '6'
+              newvalue: 'Linerless peel'
+            - value: '7'
+              newvalue: '?'
+            - value: '8'
+              newvalue: 'Linerless tear'
+            - value: '9'
+              newvalue: Applicator
+            - value: '10'
+              newvalue: 'Linerless cut'
+            - value: '11'
+              newvalue: 'Linerless delay cut'
+            - value: '12'
+              newvalue: 'Partial cut'
+            - value: '13'
+              newvalue: 'Partial delay cut'
+            - value: '14'
+              newvalue: Stream
+        - uuid: b22af3ef8e6d4ab989f9db0cb58a9d61
+          name: Yes/No
+          mappings:
+            - value: '1'
+              newvalue: 'No'
+            - value: '2'
+              newvalue: 'Yes'
+  graphs:
+    - uuid: ca69f8a1504f4cd1854e22f3e4e72846
+      name: 'ICMP loss'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: icmppingloss
+    - uuid: 231c1d22f2744b3e8848d4b3007be6e9
+      name: 'ICMP ping'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: icmpping
+    - uuid: 1db528d39b2149f38817f05c26878c04
+      name: 'ICMP response time'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: icmppingsec
+    - uuid: cac67beca1094755a49713c418e72f0e
+      name: 'Number of labels printed'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: zebra.labels
+    - uuid: 9edde32b430a4cf887e66d53aaba24e4
+      name: 'Printhead darkness'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: zebra.darkness
+    - uuid: 1fb1d6f9591e4c92b810910a14ee65f1
+      name: 'Sensor Head temperature'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Zebra Industrial Printer'
+            key: zebra.head.temperature
