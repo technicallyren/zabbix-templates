@@ -20,6 +20,7 @@ templates/
 | Category | Device / Model | Directory | Description |
 | :--- | :--- | :--- | :--- |
 | **Printers** | Zebra Link-OS (ZD420) | [`templates/printers/zebra/`](templates/printers/zebra/) | SNMP telemetry: odometers, printhead life, cutter counter, sensor states, Wi-Fi RSSI |
+| **Printers** | Canon (iR-ADV C5840) | [`templates/printers/canon/`](templates/printers/canon/) | SNMP telemetry: toners, waste, paper trays, doors, network buffer protection (RFC 3805 compliant) | 
 
 ---
 
